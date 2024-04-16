@@ -40,7 +40,7 @@ app.post('/api/users', async (req, res) => {
   try {
     const userObj = new User({ username: req.body.username });
     const user = await userObj.save();
-    res.send('User created successfully');
+    res.json({ username: user.username, _id: user._id });
   } catch (err) {
     console.log(err);
     res.status(500).send('Error creating user');
@@ -79,7 +79,6 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 });
 
 
-
 app.use(cors())
 app.use(express.static('public'))
 app.get('/', (req, res) => {
@@ -98,42 +97,40 @@ app.get("/api/users", async(req, res) => {
 // create logs
 app.get("/api/users/:_id/logs", async (req, res) =>{
   const {from, to, limit} = req.query;
-  const id = req.params._id
+  const id = req.params._id;
   const user = await User.findById(id);
   if (!user) {
-    res.send("could not find user")
-    return
+    res.send("could not find user");
+    return;
   }
-  let dataObj = {}
+  let dataObj = {};
   if (from) {
-    dataObj["$gt"] = new Date(from)
+    dataObj["$gt"] = new Date(from);
   }
   if (to) {
-    dateObj["$lt"] = new Date(to)
+    dataObj["$lt"] = new Date(to);
   }
   let filter = {
     user_id: id
-  }
-  if(from || to) {
+  };
+  if (from || to) {
     filter.date = dataObj;
   }
-  const exercises = await Exercise.find(filter).limit(+limit ?? 500)
+  const exercises = await Exercise.find(filter).limit(+limit || 500);
   
   const log = exercises.map(e => ({
     description: e.description,
     duration: e.duration,
-    date: e.date.toDateString()
-  }))
+    date: new Date(e.date).toDateString()
+  }));
   
   res.json({
     username: user.username,
-    count: exercises.length,
+    count: log.length,
     _id: user._id,
-      log
-  })
+    log
+  });
 })
-
-
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {
